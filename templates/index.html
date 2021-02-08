@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Booksnake</title>
+        <link
+            href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,500;1,700&family=Roboto&display=swap"
+            rel="stylesheet"
+        />
+        <link
+            rel="stylesheet"
+            href="https://bootswatch.com/4/lux/bootstrap.min.css"
+        />
+    </head>
+    <body>
+        <div>
+            <!-- hi :) -->
+            <br />
+            <br />
+            <br />
+            <br />
+        </div>
+        <div class="container">
+            <div class="row">
+                <div class="col col-6 offset-3">
+                    <h1
+                        style="
+                            text-transform: none;
+                            text-align: center;
+                            font-size: 42pt;
+                        "
+                    >
+                        Booksnake
+                    </h1>
+                    <p class="card-text" style="text-align: center">
+                        E-Book Ssssearch
+                    </p>
+                </div>
+            </div>
+            <br />
+            <br />
+            <br />
+
+            <div id="appRoot"></div>
+            <br />
+            <br />
+        </div>
+        <style>
+            html,
+            body {
+                font-family: "Roboto", sans-serif;
+            }
+
+            a {
+                border-bottom: 1px solid #333;
+                transition: all 0.1s;
+            }
+            a:hover {
+                border-bottom: 2px solid black;
+            }
+
+            h1,
+            h2,
+            h3,
+            h4,
+            h5,
+            h6 {
+                font-family: "Playfair Display", serif;
+                letter-spacing: 0.05em;
+            }
+        </style>
+
+        <script src="https://unpkg.com/react@16/umd/react.development.js"></script>
+        <script src="https://unpkg.com/react-dom@16/umd/react-dom.development.js"></script>
+        <script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script>
+        <script type="text/babel">
+            const BASE_URL =
+                "https://871ggcp3wc.execute-api.us-east-1.amazonaws.com/dev";
+
+            const API = {
+                search(qry) {
+                    return fetch(`${BASE_URL}/api/search`, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({ query: qry }),
+                    }).then((res) => res.json());
+                },
+
+                getFile(dictData) {
+                    return fetch(`${BASE_URL}/api/download`, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({ data: dictData }),
+                    }).then((res) => {
+                        return res.blob().then((blob) => {
+                            return {
+                                blob: blob,
+                                filename: res.headers.get(
+                                    "x-suggested-filename"
+                                ),
+                            };
+                        });
+                    });
+                },
+            };
+            const Searchbar = ({ onSubmit }) => {
+                let [queryString, setQueryString] = React.useState("");
+                return (
+                    <div className="card">
+                        <div className="card-body">
+                            <div className="card-text">
+                                <div className="input-group input-group-md">
+                                    <input
+                                        type="text"
+                                        className="form-control input-md"
+                                        value={queryString}
+                                        onChange={(ev) => {
+                                            setQueryString(ev.target.value);
+                                        }}
+                                        onKeyUp={(ev) => {
+                                            if (ev.keyCode === 13) {
+                                                onSubmit(queryString);
+                                            }
+                                        }}
+                                        placeholder="Search for a book title, author, or publisher."
+                                    />
+                                    <span className="input-group-btn">
+                                        <button
+                                            className="btn btn-default btn-md"
+                                            type="submit"
+                                            onClick={() =>
+                                                onSubmit(queryString)
+                                            }
+                                        >
+                                            Search
+                                        </button>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            const SearchResultsTableRow = ({ item }) => {
+                let [downloading, setDownloading] = React.useState(false);
+                return (
+                    <div
+                        key={item.title + item.author + item.ext}
+                        className="list-group-item d-flex justify-content-between align-items-center"
+                    >
+                        {item.title} by {item.author} ({item.ext})
+                        <button
+                            // href={item.links[0]}
+                            onClick={() => {
+                                setDownloading(true);
+                                API.getFile(item).then(({ blob, filename }) => {
+                                    var link = window.document.createElement(
+                                        "a"
+                                    );
+                                    link.href = window.URL.createObjectURL(
+                                        blob,
+                                        {
+                                            type:
+                                                "application/x-mobipocket-ebook",
+                                        }
+                                    );
+                                    link.download =
+                                        filename ||
+                                        item.title.replace(" ", "-") +
+                                            "." +
+                                            item.ext;
+                                    document.body.appendChild(link);
+                                    link.click();
+                                    document.body.removeChild(link);
+                                    setDownloading(false);
+                                });
+                            }}
+                            className="btn btn-primary btn-sm"
+                            disabled={downloading}
+                        >
+                            {downloading ? "Downloading..." : "Download"}
+                        </button>
+                    </div>
+                );
+            };
+
+            const SearchResultsTable = ({ results }) => {
+                return (
+                    <div className="list-group">
+                        {results.map((res) => {
+                            return <SearchResultsTableRow item={res} />;
+                        })}
+                    </div>
+                );
+            };
+
+            const BooksnakeApplication = () => {
+                const [searchResults, updateSearchResults] = React.useState([]);
+
+                const performSearch = (qry) => {
+                    API.search(qry).then((response) => {
+                        updateSearchResults(response["results"]);
+                    });
+                };
+                return (
+                    <div>
+                        <div className="row">
+                            <div className="col">
+                                <Searchbar onSubmit={performSearch} />
+                            </div>
+                        </div>
+                        <br />
+                        <br />
+                        <br />
+                        <div className="row">
+                            <div className="col">
+                                <SearchResultsTable results={searchResults} />
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            ReactDOM.render(
+                <div>
+                    <BooksnakeApplication />
+                </div>,
+                document.getElementById("appRoot")
+            );
+        </script>
+    </body>
+</html>
