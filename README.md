@@ -1,8 +1,6 @@
 # booksnake-web
-Web frontend for booksnake
 
-
-A react-based front-end for Booksnake with a Flask backend.
+A react-based front-end for [Booksnake](https://github.com/j6k4m8/booksnake), with a Flask backend.
 
 <img width="1292" alt="image" src="https://user-images.githubusercontent.com/693511/107521411-836ee180-6b80-11eb-99b1-d22c51afbcf7.png">
 
