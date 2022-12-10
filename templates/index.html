@@ -1,19 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Booksnake</title>
-        <link
-            href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,500;1,700&family=Roboto&display=swap"
-            rel="stylesheet"
-        />
-        <link
-            rel="stylesheet"
-            href="https://bootswatch.com/4/lux/bootstrap.min.css"
-        />
-    </head>
-    <body>
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Booksnake</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,500;1,700&family=Roboto&display=swap"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="https://bootswatch.com/4/lux/bootstrap.min.css" />
+
+</head>
+
+<body>
+    <div id="page">
         <div>
             <!-- hi :) -->
             <br />
@@ -24,24 +24,24 @@
         <div class="container">
             <div class="row">
                 <div class="col col-6 offset-3">
-                    <h1
-                        style="
-                            text-transform: none;
-                            text-align: center;
-                            font-size: 42pt;
-                        "
-                    >
+                    <h1 style="
+                                text-transform: none;
+                                text-align: center;
+                                font-size: 42pt;
+                            ">
                         Booksnake
                     </h1>
                     <p class="card-text" style="text-align: center">
                         E-Book Ssssearch
+                    </p>
+                    <p class="card-text" style="text-align: center">
+                        version 0.1.2
                     </p>
                 </div>
             </div>
             <br />
             <br />
             <br />
-
             <div id="appRoot"></div>
             <br />
             <br />
@@ -56,6 +56,7 @@
                 border-bottom: 1px solid #333;
                 transition: all 0.1s;
             }
+
             a:hover {
                 border-bottom: 2px solid black;
             }
@@ -69,14 +70,29 @@
                 font-family: "Playfair Display", serif;
                 letter-spacing: 0.05em;
             }
-        </style>
 
+            #page {
+                background: hsla(242, 100%, 95%, 1);
+                background: linear-gradient(45deg, hsla(242, 100%, 95%, 1) 1%, hsla(333, 100%, 91%, 1) 100%);
+                background: -moz-linear-gradient(45deg, hsla(242, 100%, 95%, 1) 1%, hsla(333, 100%, 91%, 1) 100%);
+                background: -webkit-linear-gradient(45deg, hsla(242, 100%, 95%, 1) 1%, hsla(333, 100%, 91%, 1) 100%);
+                filter: progid: DXImageTransform.Microsoft.gradient(startColorstr="#E4E3FF", endColorstr="#FFD3E7", GradientType=1);
+                min-height: 100vh;
+            }
+
+            .list-group-item {
+                margin-top: 4px;
+            }
+        </style>
         <script src="https://unpkg.com/react@16/umd/react.development.js"></script>
         <script src="https://unpkg.com/react-dom@16/umd/react-dom.development.js"></script>
         <script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.css" />
+        <script src="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.js"></script>
         <script type="text/babel">
-            const BASE_URL = "http://localhost:5000";
-
+            let notifier = new Notyf();
+            // const BASE_URL = "http://localhost:5000";
+            const BASE_URL = window.location;
             const API = {
                 search(qry) {
                     return fetch(`${BASE_URL}/api/search`, {
@@ -85,9 +101,11 @@
                             "Content-Type": "application/json",
                         },
                         body: JSON.stringify({ query: qry }),
-                    }).then((res) => res.json());
+                    }).then((res) => res.json()).catch((err) => {
+                        notifier.error("Could not complete the search due to a server error: " + err);
+                        console.error(err);
+                    });
                 },
-
                 getFile(dictData) {
                     return fetch(`${BASE_URL}/api/download`, {
                         method: "POST",
@@ -109,6 +127,7 @@
             };
             const Searchbar = ({ onSubmit }) => {
                 let [queryString, setQueryString] = React.useState("");
+                let [isSearching, setIsSearching] = React.useState(false);
                 return (
                     <div className="card">
                         <div className="card-body">
@@ -123,7 +142,10 @@
                                         }}
                                         onKeyUp={(ev) => {
                                             if (ev.keyCode === 13) {
-                                                onSubmit(queryString);
+                                                setIsSearching(true);
+                                                onSubmit(queryString).then(() => {
+                                                    setIsSearching(false);
+                                                });
                                             }
                                         }}
                                         placeholder="Search for a book title, author, or publisher."
@@ -132,11 +154,23 @@
                                         <button
                                             className="btn btn-default btn-md"
                                             type="submit"
-                                            onClick={() =>
-                                                onSubmit(queryString)
+                                            onClick={() => {
+                                                onSubmit(queryString).then(() => {
+                                                    setIsSearching(false);
+                                                });
+                                                setIsSearching(true);
+                                            }
                                             }
                                         >
-                                            Search
+                                            {isSearching ? (
+                                                <span
+                                                    className="spinner-border spinner-border-sm"
+                                                    role="status"
+                                                    aria-hidden="true"
+                                                ></span>
+                                            ) : (
+                                                <span>Search</span>
+                                            )}
                                         </button>
                                     </span>
                                 </div>
@@ -145,7 +179,6 @@
                     </div>
                 );
             };
-
             const SearchResultsTableRow = ({ item }) => {
                 let [downloading, setDownloading] = React.useState(false);
                 return (
@@ -172,8 +205,8 @@
                                     link.download =
                                         filename ||
                                         item.title.replace(" ", "-") +
-                                            "." +
-                                            item.ext;
+                                        "." +
+                                        item.ext;
                                     document.body.appendChild(link);
                                     link.click();
                                     document.body.removeChild(link);
@@ -188,7 +221,6 @@
                     </div>
                 );
             };
-
             const SearchResultsTable = ({ results }) => {
                 return (
                     <div className="list-group">
@@ -198,12 +230,10 @@
                     </div>
                 );
             };
-
             const BooksnakeApplication = () => {
                 const [searchResults, updateSearchResults] = React.useState([]);
-
                 const performSearch = (qry) => {
-                    API.search(qry).then((response) => {
+                    return API.search(qry).then((response) => {
                         updateSearchResults(response["results"]);
                     });
                 };
@@ -225,7 +255,6 @@
                     </div>
                 );
             };
-
             ReactDOM.render(
                 <div>
                     <BooksnakeApplication />
@@ -233,5 +262,7 @@
                 document.getElementById("appRoot")
             );
         </script>
-    </body>
+    </div>
+</body>
+
 </html>

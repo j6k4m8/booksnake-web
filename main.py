@@ -7,10 +7,7 @@ from booksnake import DEFAULT_SEARCHERS, Book, LibgenBook, GutenbergBook
 APP = Flask(__name__)
 CORS(APP)
 
-BOOK_CONSTRUCTORS = {
-    "LibgenBook": LibgenBook,
-    "GutenbergBook": GutenbergBook
-}
+BOOK_CONSTRUCTORS = {"LibgenBook": LibgenBook, "GutenbergBook": GutenbergBook}
 
 
 @APP.route("/")
@@ -23,7 +20,10 @@ def api_search():
     query_text = request.json["query"]
     results = []
     for (searcher, _) in DEFAULT_SEARCHERS:
-        results.extend(searcher().search(query_text))
+        try:
+            results.extend(searcher().search(query_text))
+        except Exception as e:
+            print(f"Error in {searcher}: {e}")
     return jsonify({"results": [r.to_dict() for r in results]})
 
 
@@ -34,24 +34,22 @@ def api_download():
 
     print(data)
     try:
-        book: Book = BOOK_CONSTRUCTORS[data['type']].from_dict(data)
+        book: Book = BOOK_CONSTRUCTORS[data["type"]].from_dict(data)
     except:
-        return jsonify({"error": "Could not parse type " + data['type']}), 500
+        return jsonify({"error": "Could not parse type " + data["type"]}), 500
 
     try:
         book_file = book.download()
     except:
-        return jsonify({"error": "Could not download book " + data['title']}), 500
+        return jsonify({"error": "Could not download book " + data["title"]}), 500
 
-    fname = data['title'].replace(" ", "-") + "." + data['ext']
+    fname = data["title"].replace(" ", "-") + "." + data["ext"]
     res = send_file(
-        io.BytesIO(book_file),
-        as_attachment=True,
-        attachment_filename=fname
+        io.BytesIO(book_file), as_attachment=True, attachment_filename=fname
     )
     res.headers["x-suggested-filename"] = fname
     return res
 
 
 if __name__ == "__main__":
-    APP.run(host="0.0.0.0", debug=True)
+    APP.run(host="0.0.0.0", debug=True, port=5020)
