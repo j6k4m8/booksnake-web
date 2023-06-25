@@ -15,7 +15,7 @@
 <body>
     <div id="page">
         <div>
-            <!-- hi :) -->
+            <!-- hi! :) -->
             <br />
             <br />
             <br />
@@ -35,7 +35,7 @@
                         E-Book Ssssearch
                     </p>
                     <p class="card-text" style="text-align: center">
-                        version 0.1.2
+                        version 0.2.0
                     </p>
                 </div>
             </div>
@@ -232,8 +232,12 @@
             };
             const BooksnakeApplication = () => {
                 const [searchResults, updateSearchResults] = React.useState([]);
+                let [statusMessage, setStatusMessage] = React.useState("");
                 const performSearch = (qry) => {
                     return API.search(qry).then((response) => {
+                        if (response["results"].length == 0) {
+                            setStatusMessage("No results found! :(")
+                        }
                         updateSearchResults(response["results"]);
                     });
                 };
@@ -245,6 +249,13 @@
                             </div>
                         </div>
                         <br />
+                        {statusMessage.length ?
+                            (
+                                <div className="card">
+                                    <div className="card-body align-items-center text-center">{statusMessage}</div>
+                                </div>
+                            ) : null
+                        }
                         <br />
                         <br />
                         <div className="row">

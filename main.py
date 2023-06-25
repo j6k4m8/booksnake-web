@@ -19,7 +19,7 @@ def index():
 def api_search():
     query_text = request.json["query"]
     results = []
-    for (searcher, _) in DEFAULT_SEARCHERS:
+    for searcher, _ in DEFAULT_SEARCHERS:
         try:
             results.extend(searcher().search(query_text))
         except Exception as e:
@@ -44,9 +44,7 @@ def api_download():
         return jsonify({"error": "Could not download book " + data["title"]}), 500
 
     fname = data["title"].replace(" ", "-") + "." + data["ext"]
-    res = send_file(
-        io.BytesIO(book_file), as_attachment=True, attachment_filename=fname
-    )
+    res = send_file(io.BytesIO(book_file), as_attachment=True, download_name=fname)
     res.headers["x-suggested-filename"] = fname
     return res
 
